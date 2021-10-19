@@ -9,7 +9,6 @@ import { fetchImages } from './components/service/api';
 import Loader from './components/Loader/Loader.jsx';
 import Button from './components/Button/Button.jsx';
 
-
 export default function App() {
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState([]);
@@ -23,7 +22,7 @@ export default function App() {
   const [totalHits, setTotalHits] = useState(0);
 
   useEffect(() => {
-    if (query.trim("") === '') {
+    if (query.trim('') === '') {
       return;
     }
     setStatus('pending');
@@ -38,7 +37,7 @@ export default function App() {
     }
     setStatus('pending');
     getImages({ nextQuery: query, page: page });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   const getImages = ({ nextQuery, page }) => {
@@ -91,7 +90,6 @@ export default function App() {
   if (status === 'pending') {
     return (
       <div>
-     
         <Loader />
       </div>
     );
@@ -110,10 +108,12 @@ export default function App() {
           toggleModal={toggleModal}
           handleSetLargeImageURL={handleSetLargeImageURL}
         />
-        {hits.length  !== 0 && (
-          <Button onClick={handleLoadMore} />
+        {hits.length !== 0 && <Button onClick={handleLoadMore} />}
+        {hits.length === 0 && (
+          <h1 className={s.title}>
+            No results {query} were found for your search....😭
+          </h1>
         )}
-        {hits.length === 0 && <h1 className={s.title}>No results { query} were found for your search....😭</h1>}
         {showModal && (
           <Modal onClose={toggleModal}>
             <img className={s.img_Modal} src={largeImageURL} alt={tags} />
@@ -121,5 +121,5 @@ export default function App() {
         )}
       </div>
     );
-        }
+  }
 }
