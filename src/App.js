@@ -1,6 +1,6 @@
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from './components/Modal/Modal';
 import SearchBar from './components/Searchbar/SearchBar';
 import s from './components/Searchbar/searchBar.module.css';
@@ -9,125 +9,117 @@ import { fetchImages } from './components/service/api';
 import Loader from './components/Loader/Loader.jsx';
 import Button from './components/Button/Button.jsx';
 
-export default class App extends Component {
-  state = {
-    query: '',
-    hits: [],
-    page: 1,
-    error: null,
-    status: 'idle',
-    showModal: false,
-    largeImageURL: '',
-    tags: '',
-    totalHits: 0,
-  };
 
-  componentDidUpdate(prevProps, prevState) {
-    const prevQuery = prevState.query;
-    const nextQuery = this.state.query;
-    const page = this.state.page;
+export default function App() {
+  const [query, setQuery] = useState('');
+  const [hits, setHits] = useState([]);
+  const [page, setPage] = useState(1);
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState('idle');
+  const [showModal, setShowModal] = useState(false);
+  const [largeImageURL, setLargeImageURL] = useState('');
+  const [tags, setTags] = useState('');
+  // eslint-disable-next-line no-unused-vars
+  const [totalHits, setTotalHits] = useState(0);
 
-    if (nextQuery !== prevQuery) {
-      this.setState({ status: 'pending' });
-      this.setState({ page: 1, hits: [] });
-      this.getImages({ nextQuery: nextQuery, page: 1 });
+  useEffect(() => {
+    if (query.trim("") === '') {
+      return;
     }
+    setStatus('pending');
+    setPage(1);
+    setHits([]);
+    getImages({ nextQuery: query, page: 1 });
+  }, [query]);
 
-    if (page !== prevState.page && page !== 1) {
-      this.setState({ status: 'pending' });
-      this.getImages({ nextQuery: nextQuery, page: page });
+  useEffect(() => {
+    if (page === 1) {
+      return;
     }
-  }
+    setStatus('pending');
+    getImages({ nextQuery: query, page: page });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
-  getImages = ({ nextQuery, page }) => {
+  const getImages = ({ nextQuery, page }) => {
     fetchImages({ nextQuery, page })
       .then(data => {
-     
-        this.setState({ status: 'resolved', totalHits: data.totalHits });
+        setStatus('resolved');
+        setTotalHits(data.totalHits);
 
-        this.setState(prevState => ({
-          hits: [...prevState.hits, ...data.hits],
-        }));
-      }).then(() => {
+        setHits(prev => [...prev, ...data.hits]);
+      })
+      .then(() => {
         return window.scrollTo({
           top: document.documentElement.scrollHeight,
           behavior: 'smooth',
         });
-      }).catch(error => this.setState({ error, status: 'rejected' }))
-      
+      })
+      .catch(error => {
+        setError(error);
+        setStatus('rejected');
+      });
   };
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const handleLoadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  handleSearchForm =  query => {
-    this.setState({  query });
+  const handleSearchForm = query => {
+    setQuery(query);
   };
 
-  handleSetLargeImageURL = ({ largeImageURL, tags }) => {
-    this.setState({ largeImageURL, tags });
+  const handleSetLargeImageURL = ({ largeImageURL, tags }) => {
+    setLargeImageURL(largeImageURL);
+    setTags(tags);
   };
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({ showModal: !showModal }));
+  const toggleModal = () => {
+    setShowModal(prevState => !prevState);
   };
-  render() {
-    const {
-      status,
-      error,
-      hits,
-      query,
-      showModal,
-      largeImageURL,
-      tags,
-    } = this.state;
 
-    if (status === 'idle') {
-      return (
-        <>
-          <SearchBar onSubmit={this.handleSearchForm} />
-          <ToastContainer autoClose={3000} theme={'colored'} />
-          <div className={s.title}>Enter name image!</div>
-        </>
-      );
-    }
-
-    if (status === 'pending') {
-      return (
-        <div>
-       
-          <Loader />
-        </div>
-      );
-    }
-
-    if (status === 'rejected') {
-      return <h1>{error.message}</h1>;
-    }
-
-    if (status === 'resolved') {
-      return (
-        <div className={s.App}>
-          <SearchBar onSubmit={this.handleSearchForm} />
-          <ImageGallery
-            hits={hits}
-            toggleModal={this.toggleModal}
-            handleSetLargeImageURL={this.handleSetLargeImageURL}
-          />
-          {hits.length  !== 0 && (
-            <Button onClick={this.handleLoadMore} />
-          )}
-          {hits.length === 0 && <h1 className={s.title}>No results { query} were found for your search....😭</h1>}
-          {showModal && (
-            <Modal onClose={this.toggleModal}>
-              <img className={s.img_Modal} src={largeImageURL} alt={tags} />
-            </Modal>
-          )}
-        </div>
-      );
-    }
+  if (status === 'idle') {
+    return (
+      <>
+        <SearchBar onSubmit={handleSearchForm} />
+        <ToastContainer autoClose={3000} theme={'colored'} />
+        <h1 className={s.title}>Enter name image!</h1>
+      </>
+    );
   }
+
+  if (status === 'pending') {
+    return (
+      <div>
+     
+        <Loader />
+      </div>
+    );
+  }
+
+  if (status === 'rejected') {
+    return <h2>{error.message}</h2>;
+  }
+
+  if (status === 'resolved') {
+    return (
+      <div className={s.App}>
+        <SearchBar onSubmit={handleSearchForm} />
+        <ImageGallery
+          hits={hits}
+          toggleModal={toggleModal}
+          handleSetLargeImageURL={handleSetLargeImageURL}
+        />
+        {hits.length  !== 0 && (
+          <Button onClick={handleLoadMore} />
+        )}
+        {hits.length === 0 && <h1 className={s.title}>No results { query} were found for your search....😭</h1>}
+        {showModal && (
+          <Modal onClose={toggleModal}>
+            <img className={s.img_Modal} src={largeImageURL} alt={tags} />
+          </Modal>
+        )}
+      </div>
+    );
+        }
 }
